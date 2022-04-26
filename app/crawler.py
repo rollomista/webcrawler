@@ -1,15 +1,12 @@
-from ast import arg
 import logging
-import multiprocessing
 from bs4 import BeautifulSoup
 import requests
 from urllib.parse import urljoin
 import telebot
 import os
-import time
 import app.myqueue as myqueue
-import threading
-from xlwt import *
+
+import csv
 
 TOKEN = os.getenv('API_TELEGRAM_TOKEN')
 bot = telebot.TeleBot(TOKEN)
@@ -17,12 +14,14 @@ bot = telebot.TeleBot(TOKEN)
 logging.basicConfig(
     format='%(asctime)s %(levelname)s:%(message)s',
     level=logging.DEBUG)
+
 class Crawler:
 
     def __init__(self,id_msg, urls=[]):
         self.visited_urls = []
         self.urls_to_visit = urls
         self.id_msg = id_msg
+        # self.target = target
 
     def download_url(self, url):
         # download dell'intero html 
@@ -48,9 +47,6 @@ class Crawler:
             self.add_url_to_visit(url)
         
     def run(self):
-        workbook = Workbook(encoding = 'utf-8')
-        table = workbook.add_sheet('data')
-        table.write(0, 0, 'url')
         line = 0
         while self.urls_to_visit:
             # url da visitare
@@ -64,10 +60,10 @@ class Crawler:
             finally:
                 self.visited_urls.append(url)
                 # self.queue.add_item(url)
-                line += 1
-                table.write(line, 0, url)
-
-                workbook.save('urls.xls')
+                with open('urls.csv', 'a', newline='') as csvfile:
+                    spamwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    spamwriter.writerow({str(url):line})
+                    line += 1
 
         logging.warning(f'Length list: {len(self.urls_to_visit)}')
         

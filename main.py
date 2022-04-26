@@ -25,17 +25,26 @@ def hello(message):
 
 @bot.message_handler(commands=['start_alert'])
 def start_alert(message):
+    id_msg = message.chat.id
     while True:
+        start = time.time()
         alertbot.alert_bot(message.chat.id)
-        time.sleep(1)
+        
+        end = time.time()
+
+        logging.info("alert - Elapsed {0} seconds".format(end-start))
+        bot.send_message(id_msg, "Tempo alert: {0}".format(end-start))
+
+        time.sleep(2)
 
 @bot.message_handler(commands=['start_crawler'])
 def start_crawler(message):
     start = time.time()
     id_msg = message.chat.id
     crawler.crawler_bot(id_msg)
+
     end = time.time()
-    logging.info("Elapsed {0} seconds".format(end-start))
+    logging.info("crawler - Elapsed {0} seconds".format(end-start))
 
     bot.send_message(id_msg, "Il crawling è terminato: {0}".format(end-start))
 

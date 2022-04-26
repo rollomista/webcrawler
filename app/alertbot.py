@@ -3,9 +3,9 @@ import logging
 import threading
 from lxml import html
 import time
-import telebot
 import os
-import xlrd
+import telebot
+from bs4 import BeautifulSoup
 
 
 
@@ -18,22 +18,16 @@ logging.basicConfig(
 
 class AlertBot:
 
-    def __init__(self, id_msg, url):
+    def __init__(self, id_msg):
         self.id_msg = id_msg
-        self.url = url
 
-    def check_available(self):
+    def check_available(self, url):
         headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36'}
         
         # adding headers to show that you are
         # a browser who is sending GET request
-        page = requests.get(self.url, headers = headers)
-        # soup = BeautifulSoup(html, 'html.parser')
-        # for input in soup.find_all('input'):
-        #     id = input.get('id')
-        #     name = input.get('name')
-        #     if id == 'buy-now-button' and name =='submit.buy-now':
-        #         bot.send_message(self.id_msg, f'Disponibile -> {self.url }')
+        page = requests.get(url, headers = headers)
+
         for _ in range(20):
             # because continuous checks in
             # milliseconds or few seconds
@@ -42,45 +36,42 @@ class AlertBot:
             
             # parsing the html content
             doc = html.fromstring(page.content)
-            
-            # checking availability
+        
+        # checking availability
             XPATH_AVAILABILITY = '//div[@id ="availability"]//text()'
             raw_availability = doc.xpath(XPATH_AVAILABILITY)
             AVAILABILITY = ''.join(raw_availability).strip() if raw_availability else None
             return AVAILABILITY
 
-    def run(self):
+    def run(self, url):
         arr = [
             'Only 1 left in stock.',
             'Only 2 left in stock.',
             'In stock.',
             'Disponibilità immediata.']
-        ans = self.check_available()
+        ans = self.check_available(url)
         logging.debug(ans)
         if ans in arr:
-            bot.send_message(self.id_msg, f'Disponibile -> {self.url} [{ans}] ')
+            bot.send_message(self.id_msg, f'Disponibile -> {url} [{ans}] ')
 
 def alert_bot(id_msg):
 
-    # urls = ['https://www.amazon.it/Playstation-Sony-PlayStation-5/dp/B08KKJ37F7', 'https://www.amazon.it/Sony-PlayStation%C2%AE5-DualSenseTM-Wireless-Controller/dp/B09NLFPD4Q/ref=sr_1_1?__mk_it_IT=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=1I0ENLCB7UWGN&keywords=ps5&qid=1650915089&sprefix=ps5%2Caps%2C125&sr=8-1&th=1']
-    file_location = "urls.xls"
-    workbook = xlrd.open_workbook(file_location)
-    sheet = workbook.sheet_by_name('data')
+    urls_book = open('urls.csv', 'r')
+    urls = urls_book.readlines()
 
-    urls = []
-    for cell in sheet.col(0):
-        if isinstance(cell.value, str):
-            urls.append(cell.value)
-            
-    urls.pop(0)
     thrList = []
-    for url in urls:
-        logging.info(f'URL ALER {url}')
-        alert = AlertBot(id_msg, url)
 
-        thr = threading.Thread(target=alert.run(), args=())
-        thr.start()
-        thrList.append(thr)
-        
+    for line in urls:
+        url = line.strip()
+        if url != None and isinstance(url, str):
+            logging.info(f'alert url: {url}')
+            # alert = AlertBot(id_msg, url)
+
+            thr = threading.Thread(target=AlertBot(id_msg).run, args=(url, ))
+            thr.start()
+            thrList.append(thr)
+
     for thr in thrList:
         thr.join()
+
+        
