@@ -5,6 +5,8 @@ from lxml import html
 import time
 import telebot
 import os
+import xlrd
+
 
 
 TOKEN = os.getenv('API_TELEGRAM_TOKEN')
@@ -60,10 +62,20 @@ class AlertBot:
 
 def alert_bot(id_msg):
 
-    urls = ['https://www.amazon.it/Playstation-Sony-PlayStation-5/dp/B08KKJ37F7', 'https://www.amazon.it/Sony-PlayStation%C2%AE5-DualSenseTM-Wireless-Controller/dp/B09NLFPD4Q/ref=sr_1_1?__mk_it_IT=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=1I0ENLCB7UWGN&keywords=ps5&qid=1650915089&sprefix=ps5%2Caps%2C125&sr=8-1&th=1']
+    # urls = ['https://www.amazon.it/Playstation-Sony-PlayStation-5/dp/B08KKJ37F7', 'https://www.amazon.it/Sony-PlayStation%C2%AE5-DualSenseTM-Wireless-Controller/dp/B09NLFPD4Q/ref=sr_1_1?__mk_it_IT=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=1I0ENLCB7UWGN&keywords=ps5&qid=1650915089&sprefix=ps5%2Caps%2C125&sr=8-1&th=1']
+    file_location = "urls.xls"
+    workbook = xlrd.open_workbook(file_location)
+    sheet = workbook.sheet_by_name('data')
+
+    urls = []
+    for cell in sheet.col(0):
+        if isinstance(cell.value, str):
+            urls.append(cell.value)
+            
+    urls.pop(0)
     thrList = []
     for url in urls:
-
+        logging.info(f'URL ALER {url}')
         alert = AlertBot(id_msg, url)
 
         thr = threading.Thread(target=alert.run(), args=())
