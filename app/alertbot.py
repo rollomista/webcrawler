@@ -49,11 +49,13 @@ class AlertBot:
             'Only 2 left in stock.',
             'In stock.',
             'Disponibilità immediata.']
-        ans = self.check_available(url)
-        logging.debug(ans)
-        if ans in arr:
-            bot.send_message(self.id_msg, f'Disponibile -> {url} [{ans}] ')
-
+        try:
+            ans = self.check_available(url)
+            logging.debug(ans)
+            if ans in arr:
+                bot.send_message(self.id_msg, f'Disponibile -> {url} [{ans}] ')
+        except Exception:
+                logging.exception(f'Failed to analize: {url}')
 def alert_bot(id_msg):
 
     urls_book = open('urls.csv', 'r')
