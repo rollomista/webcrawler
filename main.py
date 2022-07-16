@@ -3,11 +3,12 @@ import os
 import threading
 import time
 import app.alertbot as alertbot
-import app.crawler as crawler
-import app.myqueue as queue
 # telegram
 import telebot
 
+import app.page_downloader as pd # pylint: disable=import-error
+import app.parser as p # pylint: disable=import-error
+import app.db_mediator as db # pylint: disable=import-error
 
 
 TOKEN = os.getenv('API_TELEGRAM_TOKEN')
@@ -16,7 +17,6 @@ bot = telebot.TeleBot(TOKEN)
 logging.basicConfig(
     format='%(asctime)s %(levelname)s:%(message)s',
     level=logging.DEBUG)
-
 
 
 @bot.message_handler(commands=['hello'])
@@ -39,9 +39,33 @@ def start_alert(message):
 
 @bot.message_handler(commands=['start_crawler'])
 def start_crawler(message):
+    seed_urls = ['http://www.foxnews.com/',
+        'http://www.cnn.com/',
+        'http://europe.wsj.com/',
+        'http://www.bbc.co.uk/']
+    words = ['Biden', 'COVID', 'Putin', 'lockdown', 'information', 'data']
     start = time.time()
     id_msg = message.chat.id
-    crawler.crawler_bot(id_msg)
+    # crawler.crawler_bot(id_msg)
+
+    downloader = pd.PageDownloader()
+    parser = p.Parser()
+    db_mediator = db.DbMediator()
+    db_mediator.connect()
+
+    iter = 0
+    while iter < 10:
+        downloader.update_urls(seed_urls)
+        downloader.run_fetch_loop()
+        pages = downloader.export_pages()
+
+        parser.update_pages(pages)
+        seed_urls = parser.extract_output_urls()
+        word_count_table = parser.count_word_instances(words)
+
+        db_mediator.update_word_tables(word_count_table)
+        db_mediator.print_word_table(words[0])
+        iter += 1
 
     end = time.time()
     logging.info("crawler - Elapsed {0} seconds".format(end-start))
