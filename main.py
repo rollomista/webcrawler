@@ -39,14 +39,13 @@ def start_alert(message):
 
 @bot.message_handler(commands=['start_crawler'])
 def start_crawler(message):
+    
     seed_urls = ['http://www.foxnews.com/',
         'http://www.cnn.com/',
         'http://europe.wsj.com/',
         'http://www.bbc.co.uk/']
     words = ['Biden', 'COVID', 'Putin', 'lockdown', 'information', 'data']
-    start = time.time()
     id_msg = message.chat.id
-    # crawler.crawler_bot(id_msg)
 
     downloader = pd.PageDownloader()
     parser = p.Parser()
@@ -54,7 +53,8 @@ def start_crawler(message):
     db_mediator.connect()
 
     iter = 0
-    while iter < 10:
+    while True:
+        start = time.time()
         downloader.update_urls(seed_urls)
         downloader.run_fetch_loop()
         pages = downloader.export_pages()
@@ -65,12 +65,12 @@ def start_crawler(message):
 
         db_mediator.update_word_tables(word_count_table)
         db_mediator.print_word_table(words[0])
+
+        end = time.time()
+        logging.info("crawler - Elapsed {0} seconds".format(end-start))
+
+        bot.send_message(id_msg, str(iter) + " - crawling elapsed: {0} seconds".format(end-start))
         iter += 1
-
-    end = time.time()
-    logging.info("crawler - Elapsed {0} seconds".format(end-start))
-
-    bot.send_message(id_msg, "Il crawling è terminato: {0}".format(end-start))
 
 
 if __name__ == '__main__':

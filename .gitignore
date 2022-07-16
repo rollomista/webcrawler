@@ -131,3 +131,4 @@ dmypy.json
 .vscode
 
 urls.csv
+words_occurrence.db
